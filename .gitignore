@@ -2,3 +2,4 @@ myvenv
 *.png
 *.jpg
 *vscode/
+.env
