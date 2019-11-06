@@ -8,41 +8,43 @@ from telegram.ext import BaseFilter
 
 load_dotenv()
 
-# bot object
-bot = telegram.Bot(token=os.getenv('TOKEN'))
-print(bot.get_me())
-
 # logger to see what's happening
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
                     level=logging.INFO)
+logger = logging.getLogger('Ofertas_trabajo_bot')
 
-updater = Updater(token=os.getenv('TOKEN'), use_context=True)
-dispatcher = updater.dispatcher
-
+logger.info('El programa esta corriendo')
 
 # bot will respond to /start
 def start(update, context):
-    context.bot.send_message(chat_id=update.effective_chat.id, text="Soy un bot! Por favor hablame :)")
- 
-start_handler = CommandHandler('start', start)
-dispatcher.add_handler(start_handler)
+    logger.info('He recibido un comando start')
+    context.bot.send_message(
+      chat_id=update.effective_chat.id,
+      text="Soy un bot! Por favor hablame :) PS: Estoy en periodo de pruebas)")
+
+
+# returns message in all caps
+def caps(update, context):
+    logger.info('He recibido un comando caps')
+    text_caps = ' '.join(context.args).upper()
+    context.bot.send_message(chat_id=update.effective_chat.id, text=text_caps)
 
 
 # add echo
 def echo(update, context):
     context.bot.send_message(chat_id=update.effective_chat.id, text=update.message.text)
 
-echo_handler = MessageHandler(Filters.text, echo)
-dispatcher.add_handler(echo_handler)
+
+def jobs(update, context):
+    logger.info("Estoy en el callback de jobs")
+    context.bot.send_message(chat_id=update.effective_chat.id, text="Esto es ago de Python")
+    # instead of send_message should send original message to specific user
 
 
-# returns message in all caps
-def caps(update, context):
-    text_caps = ' '.join(context.args).upper()
-    context.bot.send_message(chat_id=update.effective_chat.id, text=text_caps)
-
-caps_handler = CommandHandler('caps', caps)
-dispatcher.add_handler(caps_handler)
+# catch unknown messages, must be the last handler
+def unknown(update, context):
+    logger.info('He recibido un comando desconocido')
+    context.bot.send_message(chat_id=update.effective_chat.id, text="No entendí ese comando.")
 
 
 # custom filter
@@ -53,21 +55,22 @@ class FilterJobs(BaseFilter):
 # Remember to initialize the class.
 filter_jobs = FilterJobs()
 
+ # jobs_handler = MessageHandler(filter_jobs, jobs)
 
-def jobs(update, context):
-    context.bot.send_message(chat_id=update.effective_chat.id, text="Esto es ago de Python")
-    # instead of send_message should send original message to specific user
-
-jobs_handler = MessageHandler(filter_jobs, jobs)
-dispatcher.add_handler(jobs_handler)
-
-
-# catch unknown messages, must be the last handler
-def unknown(update, context):
-    context.bot.send_message(chat_id=update.effective_chat.id, text="No entendí ese comando.")
-
-unknown_handler = MessageHandler(Filters.command, unknown)
-dispatcher.add_handler(unknown_handler)
 
 # start bot
-updater.start_polling()
+if __name__ == '__main__':
+
+    updater = Updater(token=os.getenv('TOKEN'), use_context=True)
+    dispatcher = updater.dispatcher
+
+    dispatcher.add_handler(CommandHandler('start', start))
+    dispatcher.add_handler(CommandHandler('caps', caps))
+    dispatcher.add_handler(MessageHandler(Filters.regex(r'python'), jobs))
+    dispatcher.add_handler(MessageHandler(Filters.text, echo))
+    dispatcher.add_handler(MessageHandler(Filters.command, unknown))
+
+    updater.start_polling()
+    updater.idle()
+
+# MessageHandlers should answer to messager written in group chats
